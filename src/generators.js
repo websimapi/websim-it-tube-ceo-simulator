@@ -243,6 +243,69 @@ export async function generateVideo(trend, mood) {
     return generateStaticVideo(trend);
 }
 
+// Helper to fully enrich a video with assets (audio, layers) for playback
+export async function enrichVideoWithAssets(video) {
+    // If already enriched, return
+    if (video.assets) return video;
+
+    const assets = {
+        script: "",
+        audioUrl: null,
+        subjectUrl: null,
+        bgUrl: video.thumbnailUrl // Default to thumbnail
+    };
+
+    try {
+        // 1. Generate Script
+        const scriptRes = await window.websim.chat.completions.create({
+            messages: [
+                 { role: "system", content: "Write a chaotic, 1-sentence opening line for a YouTuber intro. BE SHORT, HIGH ENERGY." },
+                 { role: "user", content: `Video Title: ${video.title}, Creator: ${video.creator}, Type: ${video.type}` }
+            ]
+        });
+        assets.script = scriptRes.content;
+
+        // 2. Generate TTS & Upload
+        const tts = await window.websim.textToSpeech({
+            text: assets.script,
+            voice: "en-male" 
+        });
+        
+        // Upload logic - persist the audio as a file
+        const ttsResponse = await fetch(tts.url);
+        const ttsBlob = await ttsResponse.blob();
+        assets.audioUrl = await window.websim.upload(ttsBlob);
+
+        // 3. Generate Transparent Asset (Layer)
+        // Extract a keyword or use title
+        const imgPrompt = `A single high quality sticker cutout element related to "${video.title}". Isolated on empty background, transparent background, png style.`;
+        const imgRes = await window.websim.imageGen({
+            prompt: imgPrompt,
+            transparent: true,
+            aspect_ratio: "1:1"
+        });
+        
+        // Upload image logic - persist the image
+        const imgResponse = await fetch(imgRes.url);
+        const imgBlob = await imgResponse.blob();
+        assets.subjectUrl = await window.websim.upload(imgBlob);
+
+        // 4. Generate Background if none exists (for static videos)
+        if (!assets.bgUrl) {
+             const bgRes = await window.websim.imageGen({
+                prompt: `Abstract distorted video background for "${video.title}", dark, digital noise, 4k`,
+                aspect_ratio: "16:9"
+            });
+            assets.bgUrl = bgRes.url;
+        }
+        
+    } catch (e) {
+        console.error("Asset Gen Failed", e);
+    }
+
+    return { ...video, assets };
+}
+
 // Function to call the LLM for unique video ideas
 async function generateAIVideo(trend, mood) {
     // Pick 3 random examples to show the AI the style
