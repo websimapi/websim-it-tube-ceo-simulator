@@ -26,10 +26,13 @@ function VideoCard({ video, onAction, mood }) {
           "div",
           {
             onClick: () => onAction(video, "watch"),
-            className: "h-32 w-full relative group cursor-pointer hover:opacity-90 transition-opacity",
-            style: { backgroundColor: video.thumbnailColor },
+            className: "h-32 w-full relative group cursor-pointer hover:opacity-90 transition-opacity bg-cover bg-center",
+            style: {
+              backgroundColor: video.thumbnailColor,
+              backgroundImage: video.thumbnailUrl ? `url(${video.thumbnailUrl})` : void 0
+            },
             children: [
-              /* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 flex items-center justify-center", children: /* @__PURE__ */ jsxDEV("span", { className: "text-4xl filter drop-shadow-md", children: [
+              !video.thumbnailUrl && /* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 flex items-center justify-center", children: /* @__PURE__ */ jsxDEV("span", { className: "text-4xl filter drop-shadow-md", children: [
                 video.type === "prank" && "\u{1F921}",
                 video.type === "education" && "\u{1F9E0}",
                 video.type === "asmr" && "\u{1F442}",
@@ -40,29 +43,29 @@ function VideoCard({ video, onAction, mood }) {
                 video.type === "meme" && "\u{1F5FF}"
               ] }, void 0, true, {
                 fileName: "<stdin>",
-                lineNumber: 34,
-                columnNumber: 21
+                lineNumber: 38,
+                columnNumber: 25
               }, this) }, void 0, false, {
                 fileName: "<stdin>",
-                lineNumber: 33,
-                columnNumber: 17
+                lineNumber: 37,
+                columnNumber: 21
               }, this),
               video.risk > 50 && /* @__PURE__ */ jsxDEV("div", { className: "absolute top-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-red-400 font-bold border border-red-500 animate-pulse", children: "\u26A0\uFE0F HIGH RISK" }, void 0, false, {
                 fileName: "<stdin>",
-                lineNumber: 48,
+                lineNumber: 53,
                 columnNumber: 21
               }, this),
               /* @__PURE__ */ jsxDEV("div", { className: "absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxDEV("div", { className: "w-12 h-12 bg-black/60 rounded-full flex items-center justify-center border-2 border-white", children: /* @__PURE__ */ jsxDEV("span", { className: "text-white text-xl ml-1", children: "\u25B6" }, void 0, false, {
                 fileName: "<stdin>",
-                lineNumber: 56,
+                lineNumber: 61,
                 columnNumber: 25
               }, this) }, void 0, false, {
                 fileName: "<stdin>",
-                lineNumber: 55,
+                lineNumber: 60,
                 columnNumber: 21
               }, this) }, void 0, false, {
                 fileName: "<stdin>",
-                lineNumber: 54,
+                lineNumber: 59,
                 columnNumber: 17
               }, this)
             ]
@@ -79,13 +82,13 @@ function VideoCard({ video, onAction, mood }) {
         /* @__PURE__ */ jsxDEV("div", { className: "p-3", children: [
           /* @__PURE__ */ jsxDEV("h3", { className: "font-bold text-white text-lg leading-tight mb-1 font-sans", children: video.title }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 63,
+            lineNumber: 68,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV("div", { className: "flex justify-between text-xs text-gray-400 mb-2", children: [
             /* @__PURE__ */ jsxDEV("span", { children: video.creator }, void 0, false, {
               fileName: "<stdin>",
-              lineNumber: 65,
+              lineNumber: 70,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDEV("span", { children: [
@@ -93,12 +96,12 @@ function VideoCard({ video, onAction, mood }) {
               " views"
             ] }, void 0, true, {
               fileName: "<stdin>",
-              lineNumber: 66,
+              lineNumber: 71,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "<stdin>",
-            lineNumber: 64,
+            lineNumber: 69,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDEV("div", { className: "flex gap-2 mt-2", children: [
@@ -114,7 +117,7 @@ function VideoCard({ video, onAction, mood }) {
               false,
               {
                 fileName: "<stdin>",
-                lineNumber: 71,
+                lineNumber: 76,
                 columnNumber: 21
               },
               this
@@ -130,19 +133,19 @@ function VideoCard({ video, onAction, mood }) {
               false,
               {
                 fileName: "<stdin>",
-                lineNumber: 83,
+                lineNumber: 88,
                 columnNumber: 21
               },
               this
             )
           ] }, void 0, true, {
             fileName: "<stdin>",
-            lineNumber: 70,
+            lineNumber: 75,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "<stdin>",
-          lineNumber: 62,
+          lineNumber: 67,
           columnNumber: 13
         }, this),
         status === "monetized" && /* @__PURE__ */ jsxDEV(
@@ -157,7 +160,7 @@ function VideoCard({ video, onAction, mood }) {
           false,
           {
             fileName: "<stdin>",
-            lineNumber: 94,
+            lineNumber: 99,
             columnNumber: 17
           },
           this

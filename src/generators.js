@@ -292,12 +292,25 @@ async function generateAIVideo(trend, mood) {
          title = `[${trend.toUpperCase()}] ${title}`;
     }
 
+    // Generate Thumbnail Image
+    let thumbnailUrl = null;
+    try {
+        const imageResult = await window.websim.imageGen({
+            prompt: `YouTube video thumbnail for "${title}" by ${data.creator}, style: ${data.type}, chaotic, vibrant, 4k, trending on artstation`,
+            aspect_ratio: "16:9"
+        });
+        thumbnailUrl = imageResult.url;
+    } catch (e) {
+        console.warn("AI Image gen failed:", e);
+    }
+
     return {
         id: Math.random().toString(36).substr(2, 9),
         title: title,
         views: data.views || "0",
         creator: data.creator || "Anon",
         thumbnailColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
+        thumbnailUrl: thumbnailUrl,
         type: VIDEO_TYPES.includes(data.type) ? data.type : "meme",
         risk: typeof data.risk === 'number' ? data.risk : 50,
         revenue: Math.floor(Math.random() * 50) + 10,
@@ -321,6 +334,7 @@ export function generateStaticVideo(trend) {
         views: base.views,
         creator: base.creator,
         thumbnailColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
+        thumbnailUrl: null,
         type: base.type,
         risk: base.risk, // 0-100 likelihood of being "cursed" or harmful
         revenue: Math.floor(Math.random() * 50) + 10,
