@@ -256,19 +256,36 @@ export async function enrichVideoWithAssets(video) {
     };
 
     try {
-        // 1. Generate Script
-        const scriptRes = await window.websim.chat.completions.create({
+        // Load voices
+        const voicesRes = await fetch('./src/voices.json');
+        const voices = await voicesRes.json();
+        const voiceOptions = voices.map(v => ({ name: v.name, id: v.voice_id }));
+
+        // 1. Generate Script & Select Voice
+        const aiRes = await window.websim.chat.completions.create({
             messages: [
-                 { role: "system", content: "Write a chaotic, 1-sentence opening line for a YouTuber intro. BE SHORT, HIGH ENERGY." },
-                 { role: "user", content: `Video Title: ${video.title}, Creator: ${video.creator}, Type: ${video.type}` }
-            ]
+                 { role: "system", content: `You are the chaotic engine of "It Tube". 
+Generate a JSON object with:
+1. "script": A chaotic, extremely short (max 12 words), high-energy YouTuber intro line.
+2. "voice_id": Select the voice ID from the list below that best fits the Creator's vibe (e.g. "Santa" for jolly, "Adam" for serious, "Mimi" for cute).
+
+Available Voices:
+${JSON.stringify(voiceOptions)}` },
+                 { role: "user", content: `Video Title: ${video.title}\nCreator: ${video.creator}\nType: ${video.type}\nRisk: ${video.risk}` }
+            ],
+            json: true
         });
-        assets.script = scriptRes.content;
+        
+        const aiData = JSON.parse(aiRes.content);
+        assets.script = aiData.script;
+        const selectedVoice = aiData.voice_id || "en-male";
+
+        console.log(`[ItTube] Voice selected for ${video.creator}: ${selectedVoice}`);
 
         // 2. Generate TTS & Upload
         const tts = await window.websim.textToSpeech({
             text: assets.script,
-            voice: "en-male" 
+            voice: selectedVoice
         });
         
         // Upload logic - persist the audio as a file
