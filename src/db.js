@@ -84,7 +84,8 @@ class DataStore {
         for (let i = 1; i <= 10; i++) {
             const key = `slot_${i}`;
             // Handle cases where slot might be undefined or wrapped differently
-            state[key] = record[key]?.data || {};
+            // Merge with DEFAULT_STATE to ensure critical fields (like mood) always exist
+            state[key] = { ...(DEFAULT_STATE[key] || {}), ...(record[key]?.data || {}) };
         }
         return state;
     }
