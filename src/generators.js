@@ -1,5 +1,37 @@
 // Utilities for generating chaos
 
+// --- AI Rate Limiter Queue ---
+const requestQueue = [];
+let isProcessingQueue = false;
+
+const processQueue = async () => {
+    if (isProcessingQueue || requestQueue.length === 0) return;
+    isProcessingQueue = true;
+    
+    const { task, resolve, reject } = requestQueue.shift();
+    
+    try {
+        const result = await task();
+        resolve(result);
+    } catch (e) {
+        reject(e);
+    }
+    
+    // Cooldown: 4 seconds between requests to prevent server overload
+    setTimeout(() => {
+        isProcessingQueue = false;
+        processQueue();
+    }, 4000);
+};
+
+// Wrapper to push tasks to queue
+const queueAIRequest = (task) => {
+    return new Promise((resolve, reject) => {
+        requestQueue.push({ task, resolve, reject });
+        processQueue();
+    });
+};
+
 export const VIDEOS = [
     { title: "I ATE A 50LB GUMMY BEAR", views: "1.2M", creator: "SugarRush", type: "prank", risk: 20 },
     { title: "Teaching my cat Quantum Physics", views: "402", creator: "ProfessorPaws", type: "education", risk: 5 },
@@ -101,6 +133,8 @@ export const VIDEOS = [
     { title: "Password inspector - send me yours", views: "2", creator: "SecurityCheck", type: "scam", risk: 100 },
     { title: "Dry ice bomb experiment", views: "500k", creator: "BoomScience", type: "science", risk: 85 },
 ];
+
+import { VOICES } from './voices.js';
 
 export const COMMENTS = [
     "First!",
@@ -230,14 +264,17 @@ export const TRENDS = [
 const VIDEO_TYPES = ["prank", "education", "asmr", "conspiracy", "scam", "science", "reaction", "meme"];
 
 export async function generateVideo(trend, mood) {
+    // Check queue health - if backlog is too high, skip AI to prevent lags
+    if (requestQueue.length > 3) {
+        return generateStaticVideo(trend);
+    }
+
     // 40% chance to attempt AI generation for unique variety
-    // Fallback to static if AI fails or rng says so
     if (Math.random() < 0.4) {
         try {
             return await generateAIVideo(trend, mood);
         } catch (e) {
             console.warn("AI generation failed or timed out, using static generator.", e);
-            // Fallthrough to static
         }
     }
     return generateStaticVideo(trend);
@@ -256,63 +293,67 @@ export async function enrichVideoWithAssets(video) {
     };
 
     try {
-        // Load voices
-        const voicesRes = await fetch('./src/voices.json');
-        const voices = await voicesRes.json();
-        const voiceOptions = voices.map(v => ({ name: v.name, id: v.voice_id }));
+        // 1. Select Voice and Generate Script
+        const voiceOptions = VOICES.filter(v => v.type === 'default').map(v => `"${v.name}"`).join(', ');
 
-        // 1. Generate Script & Select Voice
-        const aiRes = await window.websim.chat.completions.create({
+        const completion = await queueAIRequest(() => window.websim.chat.completions.create({
             messages: [
-                 { role: "system", content: `You are the chaotic engine of "It Tube". 
-Generate a JSON object with:
-1. "script": A chaotic, extremely short (max 12 words), high-energy YouTuber intro line.
-2. "voice_id": Select the voice ID from the list below that best fits the Creator's vibe (e.g. "Santa" for jolly, "Adam" for serious, "Mimi" for cute).
-
-Available Voices:
-${JSON.stringify(voiceOptions)}` },
-                 { role: "user", content: `Video Title: ${video.title}\nCreator: ${video.creator}\nType: ${video.type}\nRisk: ${video.risk}` }
+                 { 
+                     role: "system", 
+                     content: `You are generating assets for a parody YouTube video.
+                     1. Write a chaotic, 1-sentence opening line for a YouTuber intro. BE SHORT, HIGH ENERGY.
+                     2. Select the best matching voice name for this creator from: ${voiceOptions}.
+                     
+                     Respond in JSON only:
+                     {
+                        "script": "string",
+                        "voiceName": "string"
+                     }` 
+                 },
+                 { role: "user", content: `Video Title: ${video.title}, Creator: ${video.creator}, Type: ${video.type}` }
             ],
             json: true
-        });
-        
-        const aiData = JSON.parse(aiRes.content);
-        assets.script = aiData.script;
-        const selectedVoice = aiData.voice_id || "en-male";
+        }));
 
-        console.log(`[ItTube] Voice selected for ${video.creator}: ${selectedVoice}`);
+        const result = JSON.parse(completion.content);
+        assets.script = result.script;
+
+        // Find the voice ID based on the name selected by AI
+        const selectedVoice = VOICES.find(v => v.name === result.voiceName) || VOICES[0];
+        
+        console.log(`AI selected voice: ${selectedVoice.name} for ${video.creator}`);
 
         // 2. Generate TTS & Upload
-        const tts = await window.websim.textToSpeech({
+        const tts = await queueAIRequest(() => window.websim.textToSpeech({
             text: assets.script,
-            voice: selectedVoice
-        });
+            voice: selectedVoice.voice_id
+        }));
         
-        // Upload logic - persist the audio as a file
+        // Upload logic
         const ttsResponse = await fetch(tts.url);
         const ttsBlob = await ttsResponse.blob();
         assets.audioUrl = await window.websim.upload(ttsBlob);
 
         // 3. Generate Transparent Asset (Layer)
-        // Extract a keyword or use title
         const imgPrompt = `A single high quality sticker cutout element related to "${video.title}". Isolated on empty background, transparent background, png style.`;
-        const imgRes = await window.websim.imageGen({
+        
+        const imgRes = await queueAIRequest(() => window.websim.imageGen({
             prompt: imgPrompt,
             transparent: true,
             aspect_ratio: "1:1"
-        });
+        }));
         
-        // Upload image logic - persist the image
+        // Upload logic
         const imgResponse = await fetch(imgRes.url);
         const imgBlob = await imgResponse.blob();
         assets.subjectUrl = await window.websim.upload(imgBlob);
 
-        // 4. Generate Background if none exists (for static videos)
+        // 4. Generate Background if none exists
         if (!assets.bgUrl) {
-             const bgRes = await window.websim.imageGen({
+             const bgRes = await queueAIRequest(() => window.websim.imageGen({
                 prompt: `Abstract distorted video background for "${video.title}", dark, digital noise, 4k`,
                 aspect_ratio: "16:9"
-            });
+            }));
             assets.bgUrl = bgRes.url;
         }
         
@@ -325,7 +366,6 @@ ${JSON.stringify(voiceOptions)}` },
 
 // Function to call the LLM for unique video ideas
 async function generateAIVideo(trend, mood) {
-    // Pick 3 random examples to show the AI the style
     const examples = VIDEOS.sort(() => 0.5 - Math.random()).slice(0, 3);
     
     const systemPrompt = `You are the chaotic engine of "It Tube", a satirical video platform.
@@ -342,7 +382,7 @@ async function generateAIVideo(trend, mood) {
     - Risk is 0-100 (0 = safe/boring, 100 = illegal/dangerous/cursed).
     - Views can be "12", "15M", "3.2B", etc.
     
-    Reference Examples from database:
+    Reference Examples:
     ${JSON.stringify(examples.map(e => ({ title: e.title, creator: e.creator, type: e.type, risk: e.risk })))}
     
     Output ONLY valid JSON matching this schema:
@@ -354,12 +394,12 @@ async function generateAIVideo(trend, mood) {
         "risk": number
     }`;
 
-    const completion = await window.websim.chat.completions.create({
+    const completion = await queueAIRequest(() => window.websim.chat.completions.create({
         messages: [
             { role: "system", content: systemPrompt },
         ],
         json: true
-    });
+    }));
 
     const data = JSON.parse(completion.content);
 
@@ -367,7 +407,6 @@ async function generateAIVideo(trend, mood) {
     const isTrending = Math.random() > 0.7;
     let title = data.title;
     
-    // Sometimes force the trend into the title if the AI didn't do it
     if (trend && isTrending && !title.toLowerCase().includes(trend.toLowerCase())) {
          title = `[${trend.toUpperCase()}] ${title}`;
     }
@@ -375,10 +414,10 @@ async function generateAIVideo(trend, mood) {
     // Generate Thumbnail Image
     let thumbnailUrl = null;
     try {
-        const imageResult = await window.websim.imageGen({
+        const imageResult = await queueAIRequest(() => window.websim.imageGen({
             prompt: `YouTube video thumbnail for "${title}" by ${data.creator}, style: ${data.type}, chaotic, vibrant, 4k, trending on artstation`,
             aspect_ratio: "16:9"
-        });
+        }));
         thumbnailUrl = imageResult.url;
     } catch (e) {
         console.warn("AI Image gen failed:", e);
