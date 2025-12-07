@@ -20,7 +20,8 @@ function App() {
       const data = await db.init();
       setStats(data.slot_1);
       setPlatform(data.slot_2);
-      const initialVideos = Array(5).fill(null).map(() => generateVideo(data.slot_2.activeTrend));
+      const initialPromises = Array(5).fill(null).map(() => generateVideo(data.slot_2.activeTrend, data.slot_2.mood));
+      const initialVideos = await Promise.all(initialPromises);
       setVideos(initialVideos);
       setLoading(false);
     };
@@ -47,11 +48,12 @@ function App() {
       await db.update(2, newPlatformState);
       playSound(sfxGlitch);
       showNotification(`ALGO UPDATE: Now feeling ${newMood}! Trend: ${newTrend}`);
-      addNewVideo(newTrend);
+      await addNewVideo(newTrend);
     }
   };
-  const addNewVideo = (trend) => {
-    setVideos((prev) => [generateVideo(trend), ...prev].slice(0, MAX_VIDEOS));
+  const addNewVideo = async (trend) => {
+    const newVid = await generateVideo(trend, platform?.mood || "NEUTRAL");
+    setVideos((prev) => [newVid, ...prev].slice(0, MAX_VIDEOS));
   };
   const playSound = (ref) => {
     ref.current.currentTime = 0;
@@ -113,21 +115,21 @@ function App() {
   };
   if (loading) return /* @__PURE__ */ jsxDEV("div", { className: "flex h-screen items-center justify-center text-2xl font-mono text-green-500", children: "BOOTING IT_TUBE v1.0..." }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 147,
+    lineNumber: 150,
     columnNumber: 25
   }, this);
   const currentMoodData = MOODS[platform.mood];
   return /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col h-full max-w-md mx-auto bg-gray-900 shadow-2xl overflow-hidden border-x border-gray-700", children: [
     /* @__PURE__ */ jsxDEV("div", { className: "crt-overlay absolute inset-0 z-50 pointer-events-none" }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 153,
+      lineNumber: 156,
       columnNumber: 13
     }, this),
     /* @__PURE__ */ jsxDEV("header", { className: "bg-gray-800 p-2 border-b border-gray-600 z-10", children: [
       /* @__PURE__ */ jsxDEV("div", { className: "flex justify-between items-center mb-2", children: [
         /* @__PURE__ */ jsxDEV("img", { src: "ittube_logo.png", alt: "It Tube", className: "h-8 object-contain" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 158,
+          lineNumber: 161,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV("div", { className: "font-mono text-green-400 text-xl", children: [
@@ -135,74 +137,74 @@ function App() {
           Math.floor(stats.money)
         ] }, void 0, true, {
           fileName: "<stdin>",
-          lineNumber: 159,
+          lineNumber: 162,
           columnNumber: 21
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 157,
+        lineNumber: 160,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-3 gap-2 text-xs font-mono mb-2", children: [
         /* @__PURE__ */ jsxDEV("div", { className: "bg-black/50 p-1 rounded", children: [
           /* @__PURE__ */ jsxDEV("div", { className: "text-gray-400", children: "REP" }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 164,
+            lineNumber: 167,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDEV("div", { className: "h-1 bg-gray-700 mt-1", children: /* @__PURE__ */ jsxDEV("div", { className: "h-full bg-blue-500 transition-all", style: { width: `${stats.reputation}%` } }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 166,
+            lineNumber: 169,
             columnNumber: 29
           }, this) }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 165,
+            lineNumber: 168,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "<stdin>",
-          lineNumber: 163,
+          lineNumber: 166,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV("div", { className: "bg-black/50 p-1 rounded", children: [
           /* @__PURE__ */ jsxDEV("div", { className: "text-gray-400", children: "CHAOS" }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 170,
+            lineNumber: 173,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDEV("div", { className: "h-1 bg-gray-700 mt-1", children: /* @__PURE__ */ jsxDEV("div", { className: "h-full bg-red-500 transition-all", style: { width: `${stats.chaos}%` } }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 172,
+            lineNumber: 175,
             columnNumber: 29
           }, this) }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 171,
+            lineNumber: 174,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "<stdin>",
-          lineNumber: 169,
+          lineNumber: 172,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDEV("div", { className: `bg-black/50 p-1 rounded border ${currentMoodData.color.replace("bg-", "border-")}`, children: [
           /* @__PURE__ */ jsxDEV("div", { className: "text-gray-400", children: "ALGO" }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 176,
+            lineNumber: 179,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDEV("div", { className: "truncate font-bold", children: platform.mood }, void 0, false, {
             fileName: "<stdin>",
-            lineNumber: 177,
+            lineNumber: 180,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "<stdin>",
-          lineNumber: 175,
+          lineNumber: 178,
           columnNumber: 21
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 162,
+        lineNumber: 165,
         columnNumber: 17
       }, this),
       /* @__PURE__ */ jsxDEV("div", { className: "bg-black p-1 text-center text-xs text-yellow-400 font-mono animate-pulse", children: [
@@ -210,27 +212,27 @@ function App() {
         platform.activeTrend.toUpperCase()
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 181,
+        lineNumber: 184,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 156,
+      lineNumber: 159,
       columnNumber: 13
     }, this),
     notification && /* @__PURE__ */ jsxDEV("div", { className: "absolute top-32 left-0 right-0 z-40 flex justify-center pointer-events-none", children: /* @__PURE__ */ jsxDEV("div", { className: "bg-purple-600 text-white px-4 py-2 rounded-full font-bold shadow-lg animate-bounce", children: notification }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 189,
+      lineNumber: 192,
       columnNumber: 21
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 188,
+      lineNumber: 191,
       columnNumber: 17
     }, this),
     /* @__PURE__ */ jsxDEV("main", { className: "flex-1 overflow-y-auto p-4 no-scrollbar relative z-0", children: [
       stats.chaos > 80 && /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 pointer-events-none bg-red-500/10 z-0 animate-pulse" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 199,
+        lineNumber: 202,
         columnNumber: 21
       }, this),
       videos.map((v) => /* @__PURE__ */ jsxDEV(
@@ -244,7 +246,7 @@ function App() {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 203,
+          lineNumber: 206,
           columnNumber: 21
         },
         this
@@ -253,81 +255,81 @@ function App() {
         "-- END OF FEED --",
         /* @__PURE__ */ jsxDEV("br", {}, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 212,
+          lineNumber: 215,
           columnNumber: 38
         }, this),
         "WAITING FOR CREATORS..."
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 211,
+        lineNumber: 214,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 196,
+      lineNumber: 199,
       columnNumber: 13
     }, this),
     /* @__PURE__ */ jsxDEV("footer", { className: "bg-gray-800 p-2 border-t border-gray-600 z-10", children: /* @__PURE__ */ jsxDEV("div", { className: "flex justify-around", children: [
       /* @__PURE__ */ jsxDEV("button", { className: "flex flex-col items-center text-gray-400 hover:text-white", children: [
         /* @__PURE__ */ jsxDEV("span", { className: "text-xl", children: "\u{1F3E0}" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 221,
+          lineNumber: 224,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV("span", { className: "text-xs", children: "Feed" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 222,
+          lineNumber: 225,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 220,
+        lineNumber: 223,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV("button", { className: "flex flex-col items-center text-gray-400 hover:text-white", onClick: () => showNotification("Inbox locked by Admin"), children: [
         /* @__PURE__ */ jsxDEV("span", { className: "text-xl", children: "\u{1F4E9}" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 225,
+          lineNumber: 228,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV("span", { className: "text-xs", children: "Inbox" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 226,
+          lineNumber: 229,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 224,
+        lineNumber: 227,
         columnNumber: 21
       }, this),
       /* @__PURE__ */ jsxDEV("button", { className: "flex flex-col items-center text-gray-400 hover:text-white", onClick: () => showNotification("Shop requires Level 5"), children: [
         /* @__PURE__ */ jsxDEV("span", { className: "text-xl", children: "\u{1F6D2}" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 229,
+          lineNumber: 232,
           columnNumber: 25
         }, this),
         /* @__PURE__ */ jsxDEV("span", { className: "text-xs", children: "Shop" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 230,
+          lineNumber: 233,
           columnNumber: 25
         }, this)
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 228,
+        lineNumber: 231,
         columnNumber: 21
       }, this)
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 219,
+      lineNumber: 222,
       columnNumber: 17
     }, this) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 218,
+      lineNumber: 221,
       columnNumber: 13
     }, this)
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 152,
+    lineNumber: 155,
     columnNumber: 9
   }, this);
 }
